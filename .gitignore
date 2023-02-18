@@ -1,0 +1,3 @@
+/test/**/*
+!/test/composer.json
+/vendor/
