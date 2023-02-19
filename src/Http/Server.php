@@ -2,6 +2,8 @@
 
 namespace Espresso\Http;
 
+use stdClass;
+
 class Server
 {
     const LINE_BREAK = "\r\n";
@@ -9,7 +11,15 @@ class Server
     /** @var resource TCP connection. */
     private $server;
 
-    public function listen(int $port = 80, callable $callback = null)
+    /** @var array Array of type `Router[]` */
+    private array $routers = [];
+
+    public function use(Router $router): void
+    {
+        $this->routers[] = $router;
+    }
+
+    public function listen(int $port = 80, callable $callback = null): void
     {
         $error_code = 0;
         $error_message = null;
@@ -26,6 +36,8 @@ class Server
             if (!$client) {
                 continue;
             }
+
+            $http = $this->handleRequest($client);
 
             $body = "<html>
                     <head>
@@ -50,5 +62,59 @@ class Server
             fwrite($client, $response);
             fclose($client);
         }
+    }
+
+    /**
+     * @param mixed $client Client of type `resource|Socket` to handle.
+     */
+    private function handleRequest(&$client): stdClass
+    {
+        $router = null;
+        $request = new Request();
+        $payload = '';
+        $read_payload = false;
+        $l = 1;
+
+        /** @todo Fix this block... */
+        while (($line = trim(fgets($client))) != '' && !$read_payload) {
+            if ($l == 1) {
+                $http_header = explode(' ', $line);
+                $router = $this->getRequestRouter($http_header[1], $http_header[0]);
+            } else {
+                if ($line == '') {
+                    if ($read_payload) {
+                        break;
+                    } else {
+                        $read_payload = true;
+                    }
+                }
+
+                if ($read_payload) {
+                    $payload .= $line;
+                } else {
+                    $request->setHeader($line);
+                }
+            }
+
+            $l++;
+        }
+
+        $request->setPayload($payload);
+
+        return (object) [
+            'router' => $router,
+            'request' => $request,
+        ];
+    }
+
+    private function getRequestRouter(string $resource, string $method = 'get'): ?Router
+    {
+        foreach ($this->routers as $router) {
+            if ($router = $router->getRoute($resource, $method)) {
+                return $router;
+            }
+        }
+
+        return null;
     }
 }
