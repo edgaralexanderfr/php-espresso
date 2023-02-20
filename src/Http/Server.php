@@ -37,81 +37,94 @@ class Server
                 continue;
             }
 
-            $http = $this->handleRequest($client);
+            $http = $this->buildRequest($client);
 
-            $body = "<html>
-                    <head>
-                        <title>PHP Espresso</title>
-                    </head>
-                    </body>
-                        <h1>PHP Espresso</h1>
-                        <p>Content served with PHP Espresso.</p>
-                    </body>
-                </html>";
+            if ($http->route) {
+                ((array) $http)['route']($http->request, $http->response);
+            }
 
-            $content_length = strlen($body);
-
-            $response = 'HTTP/1.1 200 OK' . self::LINE_BREAK;
-            $response .= 'Server: PHP Espresso' . self::LINE_BREAK;
-            $response .= "Content-Length: $content_length" . self::LINE_BREAK;
-            $response .= 'Content-Type: text/html' . self::LINE_BREAK;
-            $response .= 'Connection: Closed' . self::LINE_BREAK;
-            $response .= '' . self::LINE_BREAK;
-            $response .= $body . self::LINE_BREAK;
+            $response = $this->buildResponse($http->response);
 
             fwrite($client, $response);
             fclose($client);
         }
     }
 
-    /**
-     * @param mixed $client Client of type `resource|Socket` to handle.
-     */
-    private function handleRequest(&$client): stdClass
+    public function log($log): void
     {
-        $router = null;
+        echo print_r($log, true) . PHP_EOL;
+    }
+
+    /**
+     * @param mixed $client Client of type `resource` to handle.
+     */
+    private function buildRequest(&$client): stdClass
+    {
+        $route = null;
         $request = new Request();
+        $response = new Response();
         $payload = '';
-        $read_payload = false;
         $l = 1;
 
-        /** @todo Fix this block... */
-        while (($line = trim(fgets($client))) != '' && !$read_payload) {
+        while (($line = trim(fgets($client))) != '') {
             if ($l == 1) {
                 $http_header = explode(' ', $line);
-                $router = $this->getRequestRouter($http_header[1], $http_header[0]);
-            } else {
-                if ($line == '') {
-                    if ($read_payload) {
-                        break;
-                    } else {
-                        $read_payload = true;
-                    }
-                }
+                $route = $this->getRequestRouter($http_header[1], $http_header[0]);
 
-                if ($read_payload) {
-                    $payload .= $line;
-                } else {
-                    $request->setHeader($line);
-                }
+                $this->log($line);
+            } else {
+                $request->setHeader($line);
             }
 
             $l++;
         }
 
+        $bytes_to_read = socket_get_status($client)['unread_bytes'];
+
+        if ($bytes_to_read > 0) {
+            $payload = fread($client, $bytes_to_read);
+        }
+
         $request->setPayload($payload);
 
         return (object) [
-            'router' => $router,
+            'route' => $route,
             'request' => $request,
+            'response' => $response,
         ];
     }
 
-    private function getRequestRouter(string $resource, string $method = 'get'): ?Router
+    private function buildResponse(Response $response): string
+    {
+        if (!$response->getHeader('Server')) {
+            $response->setHeader('Server', 'PHP Espresso');
+        }
+
+        if (!$response->getHeader('Content-Length')) {
+            $response->setHeader('Content-Length', strlen($response->getPayload()));
+        }
+
+        if (!$response->getHeader('Content-Type')) {
+            $response->setHeader('Content-Type', 'text/html');
+        }
+
+        if (!$response->getHeader('Connection')) {
+            $response->setHeader('Connection', 'Closed');
+        }
+
+        $response_packet = 'HTTP/1.1 ' . $response->getStatus() . self::LINE_BREAK;
+        $response_packet .= implode(self::LINE_BREAK, array_values($response->getHeaders())) . self::LINE_BREAK;
+        $response_packet .= '' . self::LINE_BREAK;
+        $response_packet .= $response->getPayload();
+
+        return $response_packet;
+    }
+
+    private function getRequestRouter(string $resource, string $method = 'get'): ?callable
     {
         foreach ($this->routers as $router) {
-            if ($router = $router->getRoute($resource, $method)) {
-                return $router;
+            if ($route = $router->getRoute($resource, $method)) {
+                return $route;
             }
         }
 
