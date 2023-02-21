@@ -11,6 +11,7 @@
     ],
     "require": {},
     "autoload": {
+        "files": ["src/Event/async.php"],
         "psr-4": {
             "Espresso\\": "src/"
         }
