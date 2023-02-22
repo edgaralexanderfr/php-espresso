@@ -56,4 +56,14 @@ abstract class Packet
     {
         $this->payload = $payload;
     }
+
+    public function getJSON(): mixed
+    {
+        return json_decode($this->getBody());
+    }
+
+    public function getBody(): string
+    {
+        return $this->getPayload();
+    }
 }
