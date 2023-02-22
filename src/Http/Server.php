@@ -6,8 +6,6 @@ use stdClass;
 
 class Server
 {
-    const LINE_BREAK = "\r\n";
-
     /** @var resource TCP connection. */
     private $server;
 
@@ -112,9 +110,9 @@ class Server
             $response->setHeader('Connection', 'Closed');
         }
 
-        $response_packet = 'HTTP/1.1 ' . $response->getStatus() . self::LINE_BREAK;
-        $response_packet .= implode(self::LINE_BREAK, array_values($response->getHeaders())) . self::LINE_BREAK;
-        $response_packet .= '' . self::LINE_BREAK;
+        $response_packet = 'HTTP/1.1 ' . $response->getStatus() . LINE_BREAK;
+        $response_packet .= implode(LINE_BREAK, array_values($response->getHeaders())) . LINE_BREAK;
+        $response_packet .= '' . LINE_BREAK;
         $response_packet .= $response->getPayload();
 
         return $response_packet;

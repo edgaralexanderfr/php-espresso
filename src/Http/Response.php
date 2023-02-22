@@ -18,7 +18,15 @@ class Response extends Packet
 
     public function getStatus(): string
     {
-        return $this->getStatusCode() . ' OK';
+        $status_code = $this->getStatusCode();
+
+        if (!isset(CODES[$status_code])) {
+            $status_code = 200;
+        }
+
+        $status_text = CODES[$status_code];
+
+        return "$status_code $status_text";
     }
 
     public function send($body, int $status_code = 200, array $headers = []): string
