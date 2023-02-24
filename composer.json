@@ -13,7 +13,8 @@
     "autoload": {
         "files": [
             "src/Event/async.php",
-            "src/Http/constants.php"
+            "src/Http/constants.php",
+            "src/Utils/query_string_to_object.php"
         ],
         "psr-4": {
             "Espresso\\": "src/"

@@ -37,8 +37,10 @@ class Server
 
             $http = $this->buildRequest($client);
 
-            if ($http->route) {
-                ((array) $http)['route']($http->request, $http->response);
+            if ($http->route?->route) {
+                ((array) $http->route)['route']($http->request, $http->response, $http->route->id);
+            } else {
+                $http->response->setStatusCode(404);
             }
 
             $response = $this->buildResponse($http->response);
@@ -68,6 +70,11 @@ class Server
             if ($l == 1) {
                 $http_header = explode(' ', $line);
                 $route = $this->getRequestRouter($http_header[1], $http_header[0]);
+
+                if ($route) {
+                    $request->setId($route->id);
+                    $request->setQueryString($route->query_string);
+                }
 
                 $this->log($line);
             } else {
@@ -118,7 +125,7 @@ class Server
         return $response_packet;
     }
 
-    private function getRequestRouter(string $resource, string $method = 'get'): ?callable
+    private function getRequestRouter(string $resource, string $method = 'get'): ?stdClass
     {
         foreach ($this->routers as $router) {
             if ($route = $router->getRoute($resource, $method)) {
