@@ -58,9 +58,28 @@ class Router
             return $route_object;
         }
 
+        if (isset($this->routes[$method]["$route/"])) {
+            $route_object->route = $this->routes[$method]["$route/"];
+
+            return $route_object;
+        }
+
         $uri = explode('?', $route);
         $path = $uri[0] ?? null;
         $route_object->query_string = $uri[1] ?? null;
+
+        if (isset($this->routes[$method][$path])) {
+            $route_object->route = $this->routes[$method][$path];
+
+            return $route_object;
+        }
+
+        if (isset($this->routes[$method]["$path/"])) {
+            $route_object->route = $this->routes[$method]["$path/"];
+
+            return $route_object;
+        }
+
         $paths = explode('/', $path);
         $route_object->id = array_splice($paths, count($paths) - 1, 1)[0] ?? null;
         $path_id_sample = implode('/', $paths) . '/:id';

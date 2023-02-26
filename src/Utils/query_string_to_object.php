@@ -25,7 +25,11 @@ function query_string_to_object(?string $query_string): stdClass
         }
 
         if (empty($value)) {
-            $value = null;
+            if (!isset($pair[1])) {
+                $value = true;
+            } else {
+                $value = null;
+            }
         }
 
         if ($name) {

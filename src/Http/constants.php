@@ -3,6 +3,7 @@
 namespace Espresso\Http;
 
 const LINE_BREAK = "\r\n";
+const SOCKET_TIMEOUT = 0.1;
 
 const CODES = [
     100 => 'Continue',

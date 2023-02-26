@@ -35,7 +35,7 @@ class Request extends Packet
         return $this->query_string;
     }
 
-    public function getParam(string $name): ?string
+    public function getParam(string $name): string|bool|null
     {
         return $this->query_string->{$name} ?? null;
     }

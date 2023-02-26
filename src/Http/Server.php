@@ -3,6 +3,8 @@
 namespace Espresso\Http;
 
 use stdClass;
+use const Espresso\Http\SOCKET_TIMEOUT;
+use function Espresso\Event\async;
 
 class Server
 {
@@ -12,13 +14,35 @@ class Server
     /** @var array Array of type `Router[]` */
     private array $routers = [];
 
+    /** @var bool Whether if we want an async connection or not. */
+    private bool $async = false;
+
+    /** @var float Connection wait time for new client. Defaults to `SOCKET_TIMEOUT`. */
+    private ?float $socket_timeout = SOCKET_TIMEOUT;
+
     public function use(Router $router): void
     {
         $this->routers[] = $router;
     }
 
+    public function async(bool $async): void
+    {
+        $this->async = $async;
+    }
+
+    public function setSocketTimeout(?float $socket_timeout): void
+    {
+        $this->socket_timeout = $socket_timeout;
+    }
+
     public function listen(int $port = 80, callable $callback = null): void
     {
+        if ($this->async) {
+            $this->listenAsync($port, $callback);
+
+            return;
+        }
+
         $error_code = 0;
         $error_message = null;
 
@@ -48,6 +72,47 @@ class Server
             fwrite($client, $response);
             fclose($client);
         }
+    }
+
+    public function listenAsync(int $port = 80, callable $callback = null): void
+    {
+        async(function () use ($port, $callback) {
+            $error_code = 0;
+            $error_message = null;
+
+            $this->server = stream_socket_server("tcp://127.0.0.1:$port", $error_code, $error_message);
+
+            async(function () {
+                $client = @stream_socket_accept($this->server, $this->socket_timeout);
+
+                if (!$client) {
+                    return false;
+                }
+
+                $http = $this->buildRequest($client);
+
+                $done = function () use ($client, $http) {
+                    $response = $this->buildResponse($http->response);
+
+                    fwrite($client, $response);
+                    fclose($client);
+                };
+
+                if ($http->route?->route) {
+                    ((array) $http->route)['route']($http->request, $http->response, $done, $http->route->id);
+                } else {
+                    $http->response->setStatusCode(404);
+
+                    $done();
+                }
+
+                return false;
+            });
+
+            if ($callback) {
+                $callback();
+            }
+        });
     }
 
     public function log($log): void
