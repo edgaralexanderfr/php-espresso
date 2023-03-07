@@ -59,18 +59,7 @@ class Server
                 continue;
             }
 
-            $http = $this->buildRequest($client);
-
-            if ($http->route?->route) {
-                ((array) $http->route)['route']($http->request, $http->response, $http->route->id);
-            } else {
-                $http->response->setStatusCode(404);
-            }
-
-            $response = $this->buildResponse($http->response);
-
-            fwrite($client, $response);
-            fclose($client);
+            $this->handleCycle($client);
         }
     }
 
@@ -89,22 +78,7 @@ class Server
                     return false;
                 }
 
-                $http = $this->buildRequest($client);
-
-                $done = function () use ($client, $http) {
-                    $response = $this->buildResponse($http->response);
-
-                    fwrite($client, $response);
-                    fclose($client);
-                };
-
-                if ($http->route?->route) {
-                    ((array) $http->route)['route']($http->request, $http->response, $done, $http->route->id);
-                } else {
-                    $http->response->setStatusCode(404);
-
-                    $done();
-                }
+                $this->handleCycle($client);
 
                 return false;
             });
@@ -118,6 +92,52 @@ class Server
     public function log($log): void
     {
         echo print_r($log, true) . PHP_EOL;
+    }
+
+    /**
+     * @param mixed $client Client of type `resource` to handle.
+     */
+    private function handleCycle(&$client): void
+    {
+        $http = $this->buildRequest($client);
+        $is_done = false;
+
+        $done = function () use ($client, $http, &$is_done) {
+            if ($is_done) {
+                return;
+            }
+
+            $is_done = true;
+            $response = $this->buildResponse($http->response);
+
+            fwrite($client, $response);
+            fclose($client);
+        };
+
+        if (!$http->route || !$http->route->routes) {
+            $http->response->setStatusCode(404);
+
+            $done();
+
+            return;
+        }
+
+        $routes = $http->route->routes;
+        $route_index = -1;
+
+        $next = function () use ($http, &$done, $routes, &$route_index, &$next) {
+            $route_index++;
+
+            if (!isset($routes[$route_index])) {
+                return;
+            }
+
+            $routes[$route_index]($http->request, $http->response, $next, $http->route->id);
+
+            $done();
+        };
+
+        $next();
     }
 
     /**
