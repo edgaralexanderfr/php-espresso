@@ -1,3 +1,5 @@
+/examples/composer.lock
+/examples/vendor/
 /test/**/*
 !/test/composer.json
 /vendor/

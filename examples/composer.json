@@ -1,0 +1,23 @@
+{
+    "name": "edgaralexanderfr/php-espresso-examples",
+    "type": "project",
+    "license": "MIT",
+    "authors": [
+        {
+            "name": "Edgar Alexander Franco",
+            "email": "edgaralexanderfr@gmail.com"
+        }
+    ],
+    "require-dev": {
+        "edgaralexanderfr/php-espresso": "@dev"
+    },
+    "repositories": [
+        {
+            "type": "path",
+            "url": "../",
+            "options": {
+                "symlink": true
+            }
+        }
+    ]
+}
