@@ -14,15 +14,25 @@ class Server
     /** @var array Array of type `Router[]` */
     private array $routers = [];
 
+    /** @var array Array of type `callable[]` */
+    private array $middlewares = [];
+
     /** @var bool Whether if we want an async connection or not. */
     private bool $async = false;
 
     /** @var float Connection wait time for new client. Defaults to `SOCKET_TIMEOUT`. */
     private ?float $socket_timeout = SOCKET_TIMEOUT;
 
-    public function use(Router $router): void
+    /**
+     * @param Router|callable $resource Router or middleware to use.
+     */
+    public function use(Router|callable $resource): void
     {
-        $this->routers[] = $router;
+        if ($resource instanceof Router) {
+            $this->routers[] = $resource;
+        } else {
+            $this->middlewares[] = $resource;
+        }
     }
 
     public function async(bool $async): void
@@ -100,14 +110,8 @@ class Server
     private function handleCycle(&$client): void
     {
         $http = $this->buildRequest($client);
-        $is_done = false;
 
-        $done = function () use ($client, $http, &$is_done) {
-            if ($is_done) {
-                return;
-            }
-
-            $is_done = true;
+        $done = function () use ($client, $http) {
             $response = $this->buildResponse($http->response);
 
             fwrite($client, $response);
@@ -122,19 +126,23 @@ class Server
             return;
         }
 
-        $routes = $http->route->routes;
+        $routes = array_merge($this->middlewares, $http->route->routes);
         $route_index = -1;
 
         $next = function () use ($http, &$done, $routes, &$route_index, &$next) {
             $route_index++;
 
             if (!isset($routes[$route_index])) {
+                $done();
+
                 return;
             }
 
-            $routes[$route_index]($http->request, $http->response, $next, $http->route->id);
+            $responded = $routes[$route_index]($http->request, $http->response, $next, $done, $http->route->id);
 
-            $done();
+            if ($responded) {
+                $done();
+            }
         };
 
         $next();

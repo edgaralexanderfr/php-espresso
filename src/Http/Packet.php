@@ -52,9 +52,11 @@ abstract class Packet
         return $this->payload;
     }
 
-    public function setPayload(string $payload): void
+    public function setPayload(string $payload): bool
     {
         $this->payload = $payload;
+
+        return true;
     }
 
     public function getJSON(): mixed

@@ -29,7 +29,7 @@ class Response extends Packet
         return "$status_code $status_text";
     }
 
-    public function send($body, int $status_code = 200, array $headers = []): string
+    public function send($body, int $status_code = 200, array $headers = []): bool
     {
         if (!$headers) {
             $headers = [
@@ -44,8 +44,7 @@ class Response extends Packet
         $response = json_encode($body);
 
         $this->setStatusCode($status_code);
-        $this->setPayload($response);
 
-        return $response;
+        return $this->setPayload($response);
     }
 }
