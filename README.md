@@ -1,8 +1,18 @@
 # PHP Espresso Framework
 
-[![View last release](https://img.shields.io/badge/version-v1.0.0-informational.svg)](https://github.com/edgaralexanderfr/php-espresso/releases/latest)
-[![View last release](https://img.shields.io/badge/php->=8.0.0-informational.svg)](https://www.php.net/releases/8.0/es.php)
-![Experimental](https://img.shields.io/badge/experimental-critical.svg)
+<p align="center">
+    <img src="https://raw.githubusercontent.com/edgaralexanderfr/php-espresso/master/public/img/example.gif" alt="PHP Espresso Example GIF">
+</p>
+
+<p align="center">
+    <a href="https://github.com/edgaralexanderfr/php-espresso/releases/latest" targe="_blank">
+        <img src="https://img.shields.io/badge/version-v1.0.0-informational.svg" alt="View last release" />
+    </a>
+    <a href="https://www.php.net/releases/8.0/es.php" targe="_blank">
+        <img src="https://img.shields.io/badge/php->=8.0.0-informational.svg" alt="PHP 8.0.0" />
+    </a>
+    <img src="https://img.shields.io/badge/experimental-critical.svg" alt="Experimental" />
+</p>
 
 **PHP Espresso** is a small PHP Framework I created to develop runtime web servers for PHP running CLI programs and scripts. Very similar to frameworks like **Express** for _**NodeJS**_, **Gorilla Mux** for _**Golang**_, etc.
 
