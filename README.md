@@ -448,8 +448,98 @@ To create a new user you need to be authenticated, to do so, assign an encoded *
 
 ```bash
 AUTH_TOKEN=$(echo 'john.doe@example.com:1234567890' | base64)
-```
-
-```bash
 curl -X POST http://localhost/users -d '{"email":"john.doe@example.com","name":"John Doe"}' -H "Authorization: Bearer ${AUTH_TOKEN}"
 ```
+
+### Asynchronous programming
+
+It's still possible to do asynchronous programming with **PHP Espresso** by creating an asynchronous server and using the `async` and `$next` functions and callables:
+
+```php
+<?php
+
+require_once 'vendor/autoload.php';
+
+use function Espresso\Event\async;
+use Espresso\Http\Request;
+use Espresso\Http\Response;
+use Espresso\Http\Router;
+use Espresso\Http\Server;
+
+const SMALLER_FILE_PATH = __DIR__ . '/files/smaller-file.txt';
+const BIGGER_FILE_PATH = __DIR__ . '/files/bigger-file.txt';
+
+function read_file(string $path, int $bytes, callable $callable = null): void
+{
+    $file = fopen($path, 'r');
+    $file_size = filesize($path);
+    $content = '';
+    $read_bytes = 0;
+
+    async(function () use ($bytes, $callable, &$file, $file_size, &$content, &$read_bytes) {
+        if ($read_bytes < $file_size) {
+            $chunk_size = min($file_size - $read_bytes, $bytes);
+            $chunk = fread($file, $chunk_size);
+            $content .= $chunk;
+            $read_bytes += $chunk_size;
+
+            return false;
+        }
+
+        if ($callable) {
+            $callable($content);
+        }
+    });
+}
+
+$server = new Server();
+$router = new Router();
+
+$router->get('/read-file', function (Request $request, Response $response, callable $next) {
+    $size = $request->getParam('size');
+
+    $file_path = $size == 'big' ? BIGGER_FILE_PATH : SMALLER_FILE_PATH;
+
+    read_file($file_path, 8, function (string $content) use ($request, $response, $next, $size) {
+        $response->send([
+            'file_content' => $content,
+            'size' => $size,
+        ]);
+
+        $next();
+    });
+});
+
+$server->use($router);
+$server->async(true);
+
+$server->listen(80, function () use ($server) {
+    $server->log('Listening at port 80...');
+});
+```
+
+The `async` function initiates an **Event Looper** inside of the `listen` method when running in **async mode** by setting `$server->async(true);`.
+
+`async` may return a boolean value (**false**) when the _async call_ is not done yet and returns **true** or **nothing** when it's finished.
+
+In this example, the _async call_ inside of the `read_file` function will return **false** as long as the requested file is not completed yet, this by reading `$bytes` as a step for each chunk read through every call inside the **Event Loop** as an asynchronous process.
+
+Once the whole file is read, the `$callable` callback will be called, passing in the content of the file on the _async call_ by returning nothing at the very end of the function.
+
+If you execute:
+
+```bash
+curl 'http://localhost/read-file?size=big'
+```
+
+And:
+
+```bash
+curl 'http://localhost/read-file?size=small'
+```
+
+Right at the same time using different terminals, the smaller file request will respond earlier than the larger file request despite of being executed right after executing the request for the larger file.
+
+This could be a way to implement asynchronous programs and libraries for streaming, networking, databases, files, I/O operations, etc, although it's not perfect, it would require a vast work to implement lots of **PHP** libraries that were designed initially to be **Single-Threaded** and **Synchronous**.
+
+Maybe the future of **PHP** is promising for this purpose with the introduction of tools like `Fibers` and stuff, but yet, we will see how it goes. 🙂🐘
