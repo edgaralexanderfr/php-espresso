@@ -5,15 +5,15 @@
 </p>
 
 <p align="center">
-    <a href="https://github.com/edgaralexanderfr/php-espresso/releases/latest" targe="_blank">
+    <a href="https://github.com/edgaralexanderfr/php-espresso/releases/latest" target="_blank">
         <img src="https://img.shields.io/badge/version-v1.0.0-informational.svg" alt="View last release" title="View last release" />
     </a>
-    <a href="https://www.php.net/releases/8.0/es.php" targe="_blank">
+    <a href="https://www.php.net/releases/8.0/es.php" target="_blank">
         <img src="https://img.shields.io/badge/php->=8.0.0-informational.svg" alt="PHP 8.0.0" title="Requires PHP 8.0.0 or major" />
     </a>
     <img src="https://img.shields.io/badge/experimental-critical.svg" alt="Experimental" title="Not intended for production use" />
     <img src="https://img.shields.io/badge/sockets-yellowgreen.svg" alt="Sockets" title="PHP sockets module" />
-    <a href="https://packagist.org/packages/edgaralexanderfr/php-espresso" targe="_blank">
+    <a href="https://packagist.org/packages/edgaralexanderfr/php-espresso" target="_blank">
         <img src="https://img.shields.io/badge/composer-yellowgreen.svg" alt="Composer" title="composer require edgaralexanderfr/php-espresso" />
     </a>
 </p>
