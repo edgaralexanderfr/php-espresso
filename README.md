@@ -6,12 +6,16 @@
 
 <p align="center">
     <a href="https://github.com/edgaralexanderfr/php-espresso/releases/latest" targe="_blank">
-        <img src="https://img.shields.io/badge/version-v1.0.0-informational.svg" alt="View last release" />
+        <img src="https://img.shields.io/badge/version-v1.0.0-informational.svg" alt="View last release" title="View last release" />
     </a>
     <a href="https://www.php.net/releases/8.0/es.php" targe="_blank">
-        <img src="https://img.shields.io/badge/php->=8.0.0-informational.svg" alt="PHP 8.0.0" />
+        <img src="https://img.shields.io/badge/php->=8.0.0-informational.svg" alt="PHP 8.0.0" title="Requires PHP 8.0.0 or major" />
     </a>
-    <img src="https://img.shields.io/badge/experimental-critical.svg" alt="Experimental" />
+    <img src="https://img.shields.io/badge/experimental-critical.svg" alt="Experimental" title="Not intended for production use" />
+    <img src="https://img.shields.io/badge/sockets-yellowgreen.svg" alt="Sockets" title="PHP sockets module" />
+    <a href="https://packagist.org/packages/edgaralexanderfr/php-espresso" targe="_blank">
+        <img src="https://img.shields.io/badge/composer-yellowgreen.svg" alt="Composer" title="composer require edgaralexanderfr/php-espresso" />
+    </a>
 </p>
 
 **PHP Espresso** is a small PHP Framework I created to develop runtime web servers for PHP running CLI programs and scripts. Very similar to frameworks like **Express** for _**NodeJS**_, **Gorilla Mux** for _**Golang**_, etc.
@@ -20,12 +24,29 @@
 
 PHP was designed to be a **Single-Threaded** **Non-Asynchronous** programming language, hence, the implementation of these type of web servers is very difficult as there will be always blocking processes for each request, hence, this server/framework is non-scalable.
 
+##### Table of contents 📖
+
+1. [Requirements](#requirements)
+2. [Installation](#installation)
+3. [Usage](#usage)
+
+- [3.1 Creating a basic web server](#server)
+- [3.2 Serving a basic static HTML Page](#html)
+- [3.3 Create a POST request](#post)
+- [3.4 Complete Rest API CRUD example](#crud)
+- [3.5 Defining middlewares](#middlewares)
+- [3.6 Asynchronous programming](#async)
+
+<a name="requirements"></a>
+
 ## Requirements
 
 1. **PHP 8.0.0 or major**
 2. **Have PHP sockets module installed and enabled**
 3. **Composer**
 4. **Have a initted Composer project**
+
+<a name="installation"></a>
 
 ## Installation
 
@@ -35,7 +56,11 @@ Install **PHP Espresso** via Composer:
 composer require edgaralexanderfr/php-espresso
 ```
 
+<a name="usage"></a>
+
 ## Usage
+
+<a name="server"></a>
 
 ### Creating a basic web server
 
@@ -84,6 +109,8 @@ curl http://localhost
 
 And voila! 🎉
 
+<a name="html"></a>
+
 ### Serving a basic static HTML Page
 
 ```php
@@ -126,6 +153,8 @@ $server->listen(80, function () use ($server) {
 
 Visit http://localhost/php-espresso-page in your browser.
 
+<a name="post"></a>
+
 ### Create a POST request:
 
 ```php
@@ -163,6 +192,8 @@ Execute a POST request:
 ```bash
 curl -X POST http://localhost/users -d '{"name":"Alexander The Great"}'
 ```
+
+<a name="crud"></a>
 
 ### Complete Rest API CRUD example:
 
@@ -312,6 +343,8 @@ Delete user with `id` 2:
 curl -X DELETE http://localhost/users/2
 ```
 
+<a name="middlewares"></a>
+
 ### Defining middlewares
 
 **PHP Espresso** supports global and route middlewares. You can assign as much middlewares to a single route as you want.
@@ -460,6 +493,8 @@ To create a new user you need to be authenticated, to do so, assign an encoded *
 AUTH_TOKEN=$(echo 'john.doe@example.com:1234567890' | base64)
 curl -X POST http://localhost/users -d '{"email":"john.doe@example.com","name":"John Doe"}' -H "Authorization: Bearer ${AUTH_TOKEN}"
 ```
+
+<a name="async"></a>
 
 ### Asynchronous programming
 
