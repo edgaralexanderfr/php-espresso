@@ -6,7 +6,7 @@
 
 <p align="center">
     <a href="https://github.com/edgaralexanderfr/php-espresso/releases/latest" target="_blank">
-        <img src="https://img.shields.io/badge/version-v1.0.0-informational.svg" alt="View last release" title="View last release" />
+        <img src="https://img.shields.io/badge/version-v1.1.0-informational.svg" alt="View last release" title="View last release" />
     </a>
     <a href="https://www.php.net/releases/8.0/es.php" target="_blank">
         <img src="https://img.shields.io/badge/php->=8.0.0-informational.svg" alt="PHP 8.0.0" title="Requires PHP 8.0.0 or major" />
