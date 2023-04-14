@@ -1,5 +1,5 @@
 build:
-	go build -o lib/cthreads.so -buildmode=c-shared cthreads/cthreads.go
+	go build -o lib/gthreads.so -buildmode=c-shared gthreads/gthreads.go
 
 clean:
-	rm lib/cthreads*
+	rm lib/gthreads*
