@@ -69,7 +69,7 @@ class Server
         $error_code = 0;
         $error_message = null;
 
-        $this->server = stream_socket_server("tcp://127.0.0.1:$port", $error_code, $error_message);
+        $this->server = stream_socket_server("tcp://0.0.0.0:$port", $error_code, $error_message);
 
         if ($callback) {
             $callback();
@@ -92,7 +92,7 @@ class Server
             $error_code = 0;
             $error_message = null;
 
-            $this->server = stream_socket_server("tcp://127.0.0.1:$port", $error_code, $error_message);
+            $this->server = stream_socket_server("tcp://0.0.0.0:$port", $error_code, $error_message);
 
             async(function () {
                 $client = @stream_socket_accept($this->server, $this->socket_timeout);
@@ -117,7 +117,7 @@ class Server
         $error_code = 0;
         $error_message = null;
 
-        $this->server = stream_socket_server("tcp://127.0.0.1:$port", $error_code, $error_message);
+        $this->server = stream_socket_server("tcp://0.0.0.0:$port", $error_code, $error_message);
 
         if ($callback) {
             $callback();
