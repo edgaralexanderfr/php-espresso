@@ -9,8 +9,10 @@ use function Espresso\Event\async;
 class Server
 {
     public const MODE_SYNC = 0x00;
+    public const MODE_DEFAULT = 0x00;
     public const MODE_ASYNC = 0x01;
     public const MODE_GTHREADS = 0x02;
+    public const MODE_CTHREADS = 0x03;
 
     /** @var resource TCP connection. */
     private $server;
@@ -22,7 +24,7 @@ class Server
     private array $middlewares = [];
 
     /** @var int Indicates the mode in which the server is executing the requests processes. */
-    private int $mode = self::MODE_SYNC;
+    private int $mode = self::MODE_DEFAULT;
 
     /** @var float Connection wait time for new client. Defaults to `SOCKET_TIMEOUT`. */
     private ?float $socket_timeout = SOCKET_TIMEOUT;
@@ -41,7 +43,7 @@ class Server
 
     public function async(bool $async): void
     {
-        $this->mode = $async ? self::MODE_ASYNC : self::MODE_SYNC;
+        $this->mode = $async ? self::MODE_ASYNC : self::MODE_DEFAULT;
     }
 
     public function setMode(int $mode): void
@@ -64,6 +66,10 @@ class Server
 
         if ($this->mode == self::MODE_GTHREADS) {
             $this->listenGThreads($port, $callback);
+        }
+
+        if ($this->mode == self::MODE_CTHREADS) {
+            $this->listenCThreads($port, $callback);
         }
 
         $error_code = 0;
@@ -130,7 +136,33 @@ class Server
                 continue;
             }
 
-            $cycle_thread = new CycleThread(function () use (&$client) {
+            $cycle_thread = new GCycleThread(function () use (&$client) {
+                $this->handleCycle($client);
+            });
+
+            $cycle_thread->start();
+        }
+    }
+
+    public function listenCThreads(int $port = 80, callable $callback = null): void
+    {
+        $error_code = 0;
+        $error_message = null;
+
+        $this->server = stream_socket_server("tcp://0.0.0.0:$port", $error_code, $error_message);
+
+        if ($callback) {
+            $callback();
+        }
+
+        while (true) {
+            $client = @stream_socket_accept($this->server);
+
+            if (!$client) {
+                continue;
+            }
+
+            $cycle_thread = new CCycleThread(function () use (&$client) {
                 $this->handleCycle($client);
             });
 

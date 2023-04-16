@@ -4,7 +4,7 @@ namespace Espresso\Http;
 
 use Espresso\Gthreads\GThread;
 
-class CycleThread extends GThread
+class GCycleThread extends GThread
 {
     private $callable;
 
