@@ -3,3 +3,6 @@ build:
 
 clean:
 	rm lib/gthreads*
+
+php-zts:
+	docker-compose run --service-ports --rm php-8.1.18-zts bash

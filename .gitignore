@@ -1,5 +1,5 @@
 /examples/composer.lock
 /examples/vendor/
-/test/**/*
-!/test/composer.json
+/.dev/**/*
+!/.dev/composer.json
 /vendor/
