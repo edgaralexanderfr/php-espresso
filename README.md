@@ -574,16 +574,12 @@ Once the whole file is read, the `$callable` callback will be called, passing in
 If you execute:
 
 ```bash
-curl 'http://localhost/read-file?size=big'
+curl 'http://localhost/read-file?size=big'\
+& curl 'http://localhost/read-file?size=small'\
+& wait
 ```
 
-And:
-
-```bash
-curl 'http://localhost/read-file?size=small'
-```
-
-Right at the same time using different terminals, the smaller file request will respond earlier than the larger file request despite of being executed right after executing the request for the larger file.
+The smaller file request will respond earlier than the larger file request despite of being executed right at the same time.
 
 This could be a way to implement asynchronous programs and libraries for streaming, networking, databases, files, I/O operations, etc, although it's not perfect, it would require a vast work to implement lots of **PHP** libraries that were designed initially to be **Single-Threaded** and **Synchronous**.
 
