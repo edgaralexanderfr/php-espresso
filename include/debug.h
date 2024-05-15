@@ -5,4 +5,6 @@
 
 void debug(string output);
 
+void debug_int(int output);
+
 #endif

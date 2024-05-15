@@ -14,4 +14,11 @@ void debug(string output)
 #endif
 }
 
+void debug_int(int output)
+{
+#ifdef ESPRESSO_DEBUG
+    printf("%i\n", output);
+#endif
+}
+
 #endif
