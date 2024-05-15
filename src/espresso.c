@@ -14,7 +14,7 @@ extern void Listen(uint16_t port)
 
 extern void listen(uint16_t port)
 {
-    espresso_server_listen(port);
+    espresso_http_server_listen(port);
 }
 
 #endif

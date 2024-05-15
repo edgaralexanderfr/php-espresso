@@ -6,7 +6,7 @@
 
 #include "debug.c"
 
-void espresso_server_listen(uint16_t port)
+void espresso_http_server_listen(uint16_t port)
 {
     debug("Espresso server created at port:");
     debug_int(port);
