@@ -1,5 +1,8 @@
-/examples/composer.lock
-/examples/vendor/
 /.dev/**/*
 !/.dev/composer.json
+/bin/**/*
+!/bin/.gitkeep
+/examples/composer.lock
+/examples/vendor/
+/src/test.c
 /vendor/

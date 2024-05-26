@@ -3,8 +3,8 @@
 
 #include "types.h"
 
-extern void Listen(uint16_t port);
+extern void Listen(uint16 port);
 
-extern void listen(uint16_t port);
+extern void listen(uint16 port);
 
 #endif
