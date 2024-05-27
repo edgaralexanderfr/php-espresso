@@ -2,17 +2,16 @@
 #define ESPRESSO_C
 
 #include "espresso.h"
-#include "types.h"
 #include "http.h"
 
 #include "http.c"
 
-extern void Listen(uint16 port)
+extern void setEspressoErrorCallable(void (*callable)(const char *))
 {
-    listen(port);
+    espresso_error_callable = callable;
 }
 
-extern void listen(uint16 port)
+extern void listenEspressoServer(unsigned short port)
 {
     espresso_http_server_listen(port);
 }

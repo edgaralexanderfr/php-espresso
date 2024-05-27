@@ -9,6 +9,7 @@
 #include <sys/types.h>
 #include <unistd.h>
 
+#include "espresso.h"
 // #include "debug.h"
 #include "types.h"
 
@@ -16,7 +17,7 @@
 
 void espresso_http_server_listen(uint16 port)
 {
-    extern int32 errno;
+    global int32 errno;
     struct sockaddr_in address;
     socklen_t address_length = sizeof(address);
     int32 result;
@@ -25,9 +26,9 @@ void espresso_http_server_listen(uint16 port)
 
     if (server == -1)
     {
-        printf("%s\n", "Error while creating the socket.");
+        espresso_http_server_handle_error(1, errno);
 
-        exit(1);
+        return;
     }
 
     int32 opt = 1;
@@ -40,9 +41,9 @@ void espresso_http_server_listen(uint16 port)
 
     if (result == -1)
     {
-        printf("`setsockopt` error #%i.\n", errno);
+        espresso_http_server_handle_error(2, errno);
 
-        exit(2);
+        return;
     }
 
     address.sin_family = AF_INET;
@@ -53,18 +54,18 @@ void espresso_http_server_listen(uint16 port)
 
     if (result == -1)
     {
-        printf("Binding error #%i.\n", errno);
+        espresso_http_server_handle_error(3, errno);
 
-        exit(3);
+        return;
     }
 
     result = listen(server, 4);
 
     if (result == -1)
     {
-        printf("%s\n", "Error while listening the server.");
+        espresso_http_server_handle_error(4, errno);
 
-        exit(4);
+        return;
     }
 
     const uint32 buffer_size = 65536;
@@ -77,9 +78,9 @@ void espresso_http_server_listen(uint16 port)
 
         if (client == -1)
         {
-            printf("%s\n", "Error while accepting the connection.");
+            espresso_http_server_handle_error(5, errno);
 
-            exit(5);
+            continue;
         }
 
         memset(buffer, 0, buffer_size);
@@ -88,12 +89,25 @@ void espresso_http_server_listen(uint16 port)
         const string response = "HTTP/1.1 200 OK\n\n";
         uint32 response_length = strlen(response);
 
-        send(client, response, response_length, 0);
+        result = send(client, response, response_length, 0);
+
+        if (client == -1)
+        {
+            espresso_http_server_handle_error(6, errno);
+        }
 
         close(client);
     }
 
     close(server);
+}
+
+void espresso_http_server_handle_error(byte type, int32 errno)
+{
+    if (espresso_error_callable)
+    {
+        espresso_error_callable("Unable to start a new espresso server using the provided port.");
+    }
 }
 
 #endif

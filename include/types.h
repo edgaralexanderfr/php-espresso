@@ -4,6 +4,7 @@
 #define null NULL
 #define false 0
 #define true 1
+#define global extern
 
 typedef unsigned char bool;
 typedef unsigned char byte;

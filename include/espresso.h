@@ -1,10 +1,10 @@
 #ifndef ESPRESSO_H
 #define ESPRESSO_H
 
-#include "types.h"
+void (*espresso_error_callable)(const char *);
 
-extern void Listen(uint16 port);
+extern void setEspressoErrorCallable(void (*callable)(const char *));
 
-extern void listen(uint16 port);
+extern void listenEspressoServer(unsigned short port);
 
 #endif
