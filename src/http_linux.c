@@ -2,13 +2,17 @@
 #define ESPRESSO_HTTP_LINUX_C
 
 #include <arpa/inet.h>
-#include <stdlib.h> //
+#include <stdlib.h>
 #include <string.h>
+// #include <sys/ioctl.h>
 #include <sys/socket.h>
 #include <sys/types.h>
 #include <unistd.h>
 
+// #include "debug.h"
 #include "types.h"
+
+// #include "debug.c"
 
 void espresso_http_server_listen(uint16 port)
 {
@@ -63,31 +67,32 @@ void espresso_http_server_listen(uint16 port)
         exit(4);
     }
 
-    int32 client = accept(server, (struct sockaddr *)&address, &address_length);
-
-    if (client == -1)
-    {
-        printf("%s\n", "Error while accepting the connection.");
-
-        exit(5);
-    }
-
-    const byte buffer_size = 128;
+    const uint32 buffer_size = 65536;
+    int32 client;
     char buffer[buffer_size];
-    const string response = "Received.\n";
-    const byte response_length = strlen(response);
 
-    do
+    while (true)
     {
-        strncpy(buffer, "", sizeof(buffer));
-        read(client, buffer, buffer_size);
+        client = accept(server, (struct sockaddr *)&address, &address_length);
 
-        printf("%s\n", buffer);
+        if (client == -1)
+        {
+            printf("%s\n", "Error while accepting the connection.");
+
+            exit(5);
+        }
+
+        memset(buffer, 0, buffer_size);
+        result = recv(client, buffer, buffer_size - 1, 0);
+
+        const string response = "HTTP/1.1 200 OK\n\n";
+        uint32 response_length = strlen(response);
 
         send(client, response, response_length, 0);
-    } while (buffer[0] != 'B' || buffer[1] != 'Y' || buffer[2] != 'E');
 
-    close(client);
+        close(client);
+    }
+
     close(server);
 }
 
