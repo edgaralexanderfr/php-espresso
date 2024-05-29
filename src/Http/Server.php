@@ -8,6 +8,11 @@ use function Espresso\Event\async;
 
 class Server
 {
+    public const MODE_DEFAULT = 0x00;
+    public const MODE_SYNC = 0x00;
+    public const MODE_ASYNC = 0x01;
+    public const MODE_NATIVE = 0x02;
+
     /** @var resource TCP connection. */
     private $server;
 
@@ -16,6 +21,9 @@ class Server
 
     /** @var array Array of type `callable[]` */
     private array $middlewares = [];
+
+    /** @var int Indicates the mode in which the server is executing the requests processes. */
+    private int $mode = self::MODE_DEFAULT;
 
     /** @var bool Whether if we want an async connection or not. */
     private bool $async = false;
@@ -40,6 +48,11 @@ class Server
         $this->async = $async;
     }
 
+    public function setMode(int $mode): void
+    {
+        $this->mode = $mode;
+    }
+
     public function setSocketTimeout(?float $socket_timeout): void
     {
         $this->socket_timeout = $socket_timeout;
@@ -47,8 +60,14 @@ class Server
 
     public function listen(int $port = 80, callable $callback = null): void
     {
-        if ($this->async) {
+        if ($this->mode == self::MODE_ASYNC) {
             $this->listenAsync($port, $callback);
+
+            return;
+        }
+
+        if ($this->mode == self::MODE_NATIVE) {
+            $this->listenNative($port, $callback);
 
             return;
         }
@@ -56,7 +75,7 @@ class Server
         $error_code = 0;
         $error_message = null;
 
-        $this->server = stream_socket_server("tcp://127.0.0.1:$port", $error_code, $error_message);
+        $this->server = stream_socket_server("tcp://0.0.0.0:{$port}", $error_code, $error_message);
 
         if ($callback) {
             $callback();
@@ -79,7 +98,7 @@ class Server
             $error_code = 0;
             $error_message = null;
 
-            $this->server = stream_socket_server("tcp://127.0.0.1:$port", $error_code, $error_message);
+            $this->server = stream_socket_server("tcp://0.0.0.0:{$port}", $error_code, $error_message);
 
             async(function () {
                 $client = @stream_socket_accept($this->server, $this->socket_timeout);
@@ -97,6 +116,22 @@ class Server
                 $callback();
             }
         });
+    }
+
+    public function listenNative(int $port = 80, callable $callback = null): void
+    {
+        $nativeServer = new NativeServer();
+
+        $nativeServer->setHttpServerCallable(function ($request) {
+            /** @todo Correct SegFault in here... */
+            return "HTTP/1.1 200 OK\n\n";
+        });
+
+        if ($callback) {
+            $callback();
+        }
+
+        $nativeServer->listenServer($port);
     }
 
     public function log($log): void

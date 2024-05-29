@@ -86,10 +86,20 @@ void espresso_http_server_listen(uint16 port)
         memset(buffer, 0, buffer_size);
         result = recv(client, buffer, buffer_size - 1, 0);
 
-        const string response = "HTTP/1.1 200 OK\n\n";
-        uint32 response_length = strlen(response);
+        uint32 response_length;
 
-        result = send(client, response, response_length, 0);
+        if (espresso_http_server_callable)
+        {
+            const char *response = espresso_http_server_callable(buffer);
+            response_length = strlen(response);
+            result = send(client, response, response_length, 0);
+        }
+        else
+        {
+            const char *response = "";
+            response_length = strlen(response);
+            result = send(client, response, response_length, 0);
+        }
 
         if (client == -1)
         {
