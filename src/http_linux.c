@@ -91,6 +91,7 @@ void espresso_http_server_listen(uint16 port)
         if (espresso_http_server_callable)
         {
             struct espresso_http_server_request *request = (struct espresso_http_server_request *)malloc(sizeof(struct espresso_http_server_request));
+            request->request = buffer;
             espresso_http_server_callable(request);
 
             const char *response = request->response;

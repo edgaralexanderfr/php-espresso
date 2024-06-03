@@ -124,31 +124,20 @@ class Server
         $espresso = $native_server->getFFI();
 
         $native_server->setHttpServerCallable(function (\FFI\CData $request) use ($espresso) {
-            $response = <<<EOT
-            HTTP/1.1 200 OK
+            $this->handleCycle(
+                client_payload: $request->request,
 
-            <!DOCTYPE html>
-            <html>
-                <head>
-                    <title>Hello world | Native Espresso</title>
-                </head>
+                callback: function (string $response) use ($request, $espresso) {
+                    $length = strlen($response);
+                    $length_with_null = $length + 1;
+                    $request->response = $espresso->new("char[{$length_with_null}]", false);
+                    \FFI::memcpy($request->response, $response, $length);
 
-                <body>
-                    <h1>Hello world | Native Espresso</h1>
-
-                    <p>Hello world using Native Espresso!</p>
-                </body>
-            </html>
-            EOT;
-
-            $length = strlen($response);
-            $length_with_null = $length + 1;
-            $request->response = $espresso->new("char[{$length_with_null}]", false);
-            \FFI::memcpy($request->response, $response, $length);
-
-            $request->free = function () use ($request) {
-                \FFI::free($request->response);
-            };
+                    $request->free = function () use ($request) {
+                        \FFI::free($request->response);
+                    };
+                }
+            );
         });
 
         if ($callback) {
@@ -164,17 +153,23 @@ class Server
     }
 
     /**
-     * @param mixed $client Client of type `resource` to handle.
+     * @param ?mixed   $client         Client of type `resource` to handle.
+     * @param string   $client_payload Processed client payload to handle instead of `$client`.
+     * @param callable $callback       Callback to handle instead of `fwrite`;
      */
-    private function handleCycle(&$client): void
+    private function handleCycle(&$client = null, string $client_payload = '', callable $callback = null): void
     {
-        $http = $this->buildRequest($client);
+        $http = $this->buildRequest($client, $client_payload);
 
-        $done = function () use ($client, $http) {
+        $done = function () use ($client, $callback, $http) {
             $response = $this->buildResponse($http->response);
 
-            fwrite($client, $response);
-            fclose($client);
+            if ($callback) {
+                $callback($response);
+            } else {
+                fwrite($client, $response);
+                fclose($client);
+            }
         };
 
         if (!$http->route || !$http->route->routes) {
@@ -208,38 +203,78 @@ class Server
     }
 
     /**
-     * @param mixed $client Client of type `resource` to handle.
+     * @param ?mixed   $client         Client of type `resource` to handle.
+     * @param string   $client_payload Processed client payload to handle instead of `$client`.
      */
-    private function buildRequest(&$client): stdClass
+    private function buildRequest(&$client = null, string $client_payload = ''): stdClass
     {
         $route = null;
         $request = new Request();
         $response = new Response();
         $payload = '';
-        $l = 1;
 
-        while (($line = trim(fgets($client))) != '') {
-            if ($l == 1) {
-                $http_header = explode(' ', $line);
-                $route = $this->getRequestRouter($http_header[1], $http_header[0]);
+        if ($client) {
+            $l = 1;
 
-                if ($route) {
-                    $request->setId($route->id);
-                    $request->setQueryString($route->query_string);
+            while (($line = trim(fgets($client))) != '') {
+                if ($l == 1) {
+                    $http_header = explode(' ', $line);
+                    $route = $this->getRequestRouter($http_header[1], $http_header[0]);
+
+                    if ($route) {
+                        $request->setId($route->id);
+                        $request->setQueryString($route->query_string);
+                    }
+
+                    $this->log($line);
+                } else {
+                    $request->setHeader($line);
                 }
 
-                $this->log($line);
-            } else {
-                $request->setHeader($line);
+                $l++;
             }
 
-            $l++;
-        }
+            $bytes_to_read = socket_get_status($client)['unread_bytes'];
 
-        $bytes_to_read = socket_get_status($client)['unread_bytes'];
+            if ($bytes_to_read > 0) {
+                $payload = fread($client, $bytes_to_read);
+            }
+        } else {
+            $lines = explode(LINE_BREAK, $client_payload);
+            $total_lines = count($lines);
 
-        if ($bytes_to_read > 0) {
-            $payload = fread($client, $bytes_to_read);
+            foreach ($lines as $i => $line) {
+                $line = trim($line);
+                $l = $i + 1;
+
+                if ($line == '') {
+                    break;
+                }
+
+                if ($l == 1) {
+                    $http_header = explode(' ', $line);
+                    $route = $this->getRequestRouter($http_header[1], $http_header[0]);
+
+                    if ($route) {
+                        $request->setId($route->id);
+                        $request->setQueryString($route->query_string);
+                    }
+
+                    $this->log($line);
+                } else {
+                    $request->setHeader($line);
+                }
+            }
+
+            $remaining_lines = [];
+
+            for ($i = $l; $i < $total_lines; $i++) {
+                $remaining_lines[] = $lines[$i];
+            }
+
+            if ($remaining_lines) {
+                $payload = implode(LINE_BREAK, $remaining_lines);
+            }
         }
 
         $request->setPayload($payload);
