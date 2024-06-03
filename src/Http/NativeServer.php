@@ -17,6 +17,11 @@ class NativeServer
         );
     }
 
+    public function getFFI(): \FFI
+    {
+        return $this->ffi;
+    }
+
     public function setErrorCallable(callable $callable): void
     {
         $this->ffi->setEspressoErrorCallable($callable);

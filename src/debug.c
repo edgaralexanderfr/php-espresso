@@ -7,7 +7,7 @@
 
 #include "types.h"
 
-void debug(string output)
+void debug(const char *output)
 {
 #ifdef ESPRESSO_DEBUG
     printf("%s\n", output);

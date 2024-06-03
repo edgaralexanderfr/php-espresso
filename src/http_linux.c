@@ -90,9 +90,20 @@ void espresso_http_server_listen(uint16 port)
 
         if (espresso_http_server_callable)
         {
-            const char *response = espresso_http_server_callable(buffer);
+            struct espresso_http_server_request *request = (struct espresso_http_server_request *)malloc(sizeof(struct espresso_http_server_request));
+            espresso_http_server_callable(request);
+
+            const char *response = request->response;
             response_length = strlen(response);
+
             result = send(client, response, response_length, 0);
+
+            if (request->free)
+            {
+                request->free();
+            }
+
+            free(request);
         }
         else
         {

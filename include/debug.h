@@ -3,7 +3,7 @@
 
 #include "types.h"
 
-void debug(string output);
+void debug(const char *output);
 
 void debug_int(int output);
 

@@ -120,18 +120,42 @@ class Server
 
     public function listenNative(int $port = 80, callable $callback = null): void
     {
-        $nativeServer = new NativeServer();
+        $native_server = new NativeServer();
+        $espresso = $native_server->getFFI();
 
-        $nativeServer->setHttpServerCallable(function ($request) {
-            /** @todo Correct SegFault in here... */
-            return "HTTP/1.1 200 OK\n\n";
+        $native_server->setHttpServerCallable(function (\FFI\CData $request) use ($espresso) {
+            $response = <<<EOT
+            HTTP/1.1 200 OK
+
+            <!DOCTYPE html>
+            <html>
+                <head>
+                    <title>Hello world | Native Espresso</title>
+                </head>
+
+                <body>
+                    <h1>Hello world | Native Espresso</h1>
+
+                    <p>Hello world using Native Espresso!</p>
+                </body>
+            </html>
+            EOT;
+
+            $length = strlen($response);
+            $length_with_null = $length + 1;
+            $request->response = $espresso->new("char[{$length_with_null}]", false);
+            \FFI::memcpy($request->response, $response, $length);
+
+            $request->free = function () use ($request) {
+                \FFI::free($request->response);
+            };
         });
 
         if ($callback) {
             $callback();
         }
 
-        $nativeServer->listenServer($port);
+        $native_server->listenServer($port);
     }
 
     public function log($log): void
