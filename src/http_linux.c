@@ -33,11 +33,7 @@ void espresso_http_server_listen(uint16 port)
 
     int32 opt = 1;
 
-#ifdef __APPLE__
-    result = setsockopt(server, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(opt));
-#else
-    result = setsockopt(server, SOL_SOCKET, SO_REUSEADDR | SO_REUSEPORT, &opt, sizeof(opt));
-#endif
+    result = setsockopt(server, SOL_SOCKET, ESPRESSO_HTTP_LINUX_OPT_NAME, &opt, sizeof(opt));
 
     if (result == -1)
     {
