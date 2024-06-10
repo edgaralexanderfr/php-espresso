@@ -11,7 +11,7 @@ extern void setEspressoErrorCallable(void (*callable)(const char *))
     espresso_error_callable = callable;
 }
 
-extern void setEspressoHttpServerCallable(void (*callable)(struct espresso_http_server_request *))
+extern void setEspressoHttpServerCallable(void (*callable)(struct espresso_http_server_call *))
 {
     espresso_http_server_callable = callable;
 }

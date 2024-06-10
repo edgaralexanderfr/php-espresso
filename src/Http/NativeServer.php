@@ -7,6 +7,7 @@ class NativeServer
     private const FFI_HEADER_FILE_PATH = __DIR__ . '/../../include/espresso.h';
     private const FFI_LIB_PATH = __DIR__ . '/../../lib/espresso.so';
 
+    /** @var object */
     private \FFI $ffi;
 
     public function __construct()

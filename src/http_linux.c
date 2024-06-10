@@ -86,21 +86,35 @@ void espresso_http_server_listen(uint16 port)
 
         if (espresso_http_server_callable)
         {
-            struct espresso_http_server_request *request = (struct espresso_http_server_request *)malloc(sizeof(struct espresso_http_server_request));
-            request->request = buffer;
-            espresso_http_server_callable(request);
+            struct espresso_http_server_call *call = (struct espresso_http_server_call *)malloc(sizeof(struct espresso_http_server_call));
+            espresso_http_server_callable(call);
 
-            const char *response = request->response;
-            response_length = strlen(response);
-
-            result = send(client, response, response_length, 0);
-
-            if (request->free)
+            if (call->callable)
             {
-                request->free();
+                struct espresso_http_server_request *request = (struct espresso_http_server_request *)malloc(sizeof(struct espresso_http_server_request));
+                request->request = buffer;
+                call->callable(request);
+
+                const char *response = request->response;
+                response_length = strlen(response);
+
+                result = send(client, response, response_length, 0);
+
+                if (request->free)
+                {
+                    request->free();
+                }
+
+                free(request);
+            }
+            else
+            {
+                const char *response = "";
+                response_length = strlen(response);
+                result = send(client, response, response_length, 0);
             }
 
-            free(request);
+            free(call);
         }
         else
         {

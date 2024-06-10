@@ -123,21 +123,27 @@ class Server
         $native_server = new NativeServer();
         $espresso = $native_server->getFFI();
 
-        $native_server->setHttpServerCallable(function (\FFI\CData $request) use ($espresso) {
-            $this->handleCycle(
-                client_payload: $request->request,
+        $native_server->setErrorCallable(function (string $error): void {
+            $this->log($error);
+        });
 
-                callback: function (string $response) use ($request, $espresso) {
-                    $length = strlen($response);
-                    $length_with_null = $length + 1;
-                    $request->response = $espresso->new("char[{$length_with_null}]", false);
-                    \FFI::memcpy($request->response, $response, $length);
+        $native_server->setHttpServerCallable(function (\FFI\CData $call) use ($espresso) {
+            $call->callable = function (\FFI\CData $request) use ($espresso) {
+                $this->handleCycle(
+                    client_payload: $request->request,
 
-                    $request->free = function () use ($request) {
-                        \FFI::free($request->response);
-                    };
-                }
-            );
+                    callback: function (string $response) use ($request, $espresso) {
+                        $length = strlen($response);
+                        $length_with_null = $length + 1;
+                        $request->response = $espresso->new("char[{$length_with_null}]", false);
+                        \FFI::memcpy($request->response, $response, $length);
+
+                        $request->free = function () use ($request) {
+                            \FFI::free($request->response);
+                        };
+                    }
+                );
+            };
         });
 
         if ($callback) {
