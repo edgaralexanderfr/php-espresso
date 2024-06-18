@@ -11,9 +11,17 @@
 
 #include "espresso.h"
 // #include "debug.h"
+#include "thread.h"
 #include "types.h"
 
 // #include "debug.c"
+#include "thread.c"
+
+#if defined __APPLE__
+#define ESPRESSO_HTTP_LINUX_OPT_NAME SO_REUSEADDR
+#else
+#define ESPRESSO_HTTP_LINUX_OPT_NAME SO_REUSEADDR | SO_REUSEPORT
+#endif
 
 void espresso_http_server_listen(uint16 port)
 {
@@ -64,9 +72,7 @@ void espresso_http_server_listen(uint16 port)
         return;
     }
 
-    const uint32 buffer_size = 65536;
     int32 client;
-    char buffer[buffer_size];
 
     while (true)
     {
@@ -79,59 +85,70 @@ void espresso_http_server_listen(uint16 port)
             continue;
         }
 
-        memset(buffer, 0, buffer_size);
-        result = recv(client, buffer, buffer_size - 1, 0);
+        espresso_thread_start(&espresso_http_server_thread, &client, 1);
+    }
 
-        uint32 response_length;
+    close(server);
+}
 
-        if (espresso_http_server_callable)
+void espresso_http_server_thread(mixed *args, uint32 args_count)
+{
+    global int32 errno;
+
+    int32 client = *((int32 *)args);
+    const uint32 buffer_size = 65536;
+    char buffer[buffer_size];
+
+    memset(buffer, 0, buffer_size);
+    recv(client, buffer, buffer_size - 1, 0);
+
+    uint32 response_length;
+
+    if (espresso_http_server_callable)
+    {
+        struct espresso_http_server_call *call = (struct espresso_http_server_call *)malloc(sizeof(struct espresso_http_server_call));
+        espresso_http_server_callable(call);
+
+        if (call->callable)
         {
-            struct espresso_http_server_call *call = (struct espresso_http_server_call *)malloc(sizeof(struct espresso_http_server_call));
-            espresso_http_server_callable(call);
+            struct espresso_http_server_request *request = (struct espresso_http_server_request *)malloc(sizeof(struct espresso_http_server_request));
+            request->request = buffer;
+            call->callable(request);
 
-            if (call->callable)
+            const char *response = request->response;
+            response_length = strlen(response);
+
+            send(client, response, response_length, 0);
+
+            if (request->free)
             {
-                struct espresso_http_server_request *request = (struct espresso_http_server_request *)malloc(sizeof(struct espresso_http_server_request));
-                request->request = buffer;
-                call->callable(request);
-
-                const char *response = request->response;
-                response_length = strlen(response);
-
-                result = send(client, response, response_length, 0);
-
-                if (request->free)
-                {
-                    request->free();
-                }
-
-                free(request);
-            }
-            else
-            {
-                const char *response = "";
-                response_length = strlen(response);
-                result = send(client, response, response_length, 0);
+                request->free();
             }
 
-            free(call);
+            free(request);
         }
         else
         {
             const char *response = "";
             response_length = strlen(response);
-            result = send(client, response, response_length, 0);
+            send(client, response, response_length, 0);
         }
 
-        if (client == -1)
-        {
-            espresso_http_server_handle_error(6, errno);
-        }
-
-        close(client);
+        free(call);
+    }
+    else
+    {
+        const char *response = "";
+        response_length = strlen(response);
+        send(client, response, response_length, 0);
     }
 
-    close(server);
+    if (client == -1)
+    {
+        espresso_http_server_handle_error(6, errno);
+    }
+
+    close(client);
 }
 
 void espresso_http_server_handle_error(byte type, int32 errno)
