@@ -17,12 +17,6 @@
 // #include "debug.c"
 #include "thread.c"
 
-#if defined __APPLE__
-#define ESPRESSO_HTTP_LINUX_OPT_NAME SO_REUSEADDR
-#else
-#define ESPRESSO_HTTP_LINUX_OPT_NAME SO_REUSEADDR | SO_REUSEPORT
-#endif
-
 void espresso_http_server_listen(uint16 port)
 {
     global int32 errno;
@@ -72,20 +66,19 @@ void espresso_http_server_listen(uint16 port)
         return;
     }
 
-    int32 client;
-
     while (true)
     {
-        client = accept(server, (struct sockaddr *)&address, &address_length);
+        int32 *client = (int32 *)malloc(sizeof(int32));
+        *client = accept(server, (struct sockaddr *)&address, &address_length);
 
-        if (client == -1)
+        if (*client == -1)
         {
             espresso_http_server_handle_error(5, errno);
 
             continue;
         }
 
-        espresso_thread_start(&espresso_http_server_thread, &client, 1);
+        espresso_thread_start(&espresso_http_server_thread, client, 1);
     }
 
     close(server);
@@ -95,12 +88,12 @@ void espresso_http_server_thread(mixed *args, uint32 args_count)
 {
     global int32 errno;
 
-    int32 client = *((int32 *)args);
+    int32 *client = (int32 *)args;
     const uint32 buffer_size = 65536;
     char buffer[buffer_size];
 
     memset(buffer, 0, buffer_size);
-    recv(client, buffer, buffer_size - 1, 0);
+    recv(*client, buffer, buffer_size - 1, 0);
 
     uint32 response_length;
 
@@ -118,7 +111,7 @@ void espresso_http_server_thread(mixed *args, uint32 args_count)
             const char *response = request->response;
             response_length = strlen(response);
 
-            send(client, response, response_length, 0);
+            send(*client, response, response_length, 0);
 
             if (request->free)
             {
@@ -131,7 +124,7 @@ void espresso_http_server_thread(mixed *args, uint32 args_count)
         {
             const char *response = "";
             response_length = strlen(response);
-            send(client, response, response_length, 0);
+            send(*client, response, response_length, 0);
         }
 
         free(call);
@@ -140,15 +133,16 @@ void espresso_http_server_thread(mixed *args, uint32 args_count)
     {
         const char *response = "";
         response_length = strlen(response);
-        send(client, response, response_length, 0);
+        send(*client, response, response_length, 0);
     }
 
-    if (client == -1)
+    if (*client == -1)
     {
         espresso_http_server_handle_error(6, errno);
     }
 
-    close(client);
+    close(*client);
+    free(client);
 }
 
 void espresso_http_server_handle_error(byte type, int32 errno)
